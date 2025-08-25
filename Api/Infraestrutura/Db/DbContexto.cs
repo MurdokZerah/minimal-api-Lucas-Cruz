@@ -1,3 +1,5 @@
+using System.Security.Cryptography;
+using System.Text;
 using Microsoft.EntityFrameworkCore;
 using MinimalApi.Dominio.Entidades;
 
@@ -5,10 +7,8 @@ namespace MinimalApi.Infraestrutura.Db;
 
 public class DbContexto : DbContext
 {
-    private readonly IConfiguration _configuracaoAppSettings;
-    public DbContexto(IConfiguration configuracaoAppSettings)
+    public DbContexto(DbContextOptions<DbContexto> options) : base(options)
     {
-        _configuracaoAppSettings = configuracaoAppSettings;
     }
 
     public DbSet<Administrador> Administradores { get; set; } = default!;
@@ -16,28 +16,37 @@ public class DbContexto : DbContext
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
+        // Seed Administradores com senha hash
         modelBuilder.Entity<Administrador>().HasData(
-            new Administrador {
+            new Administrador
+            {
                 Id = 1,
                 Email = "administrador@teste.com",
-                Senha = "123456",
+                Senha = GerarHashSenha("123456"),
                 Perfil = "Adm"
-             }
+            },
+            new Administrador
+            {
+                Id = 2,
+                Email = "joao@teste.com",
+                Senha = GerarHashSenha("editor"),
+                Perfil = "Editor"
+            }
+        );
+
+        // Seed Veiculos
+        modelBuilder.Entity<Veiculo>().HasData(
+            new Veiculo { Id = 1, Nome = "Fiesta 2.0", Marca = "Ford", Ano = 2013 },
+            new Veiculo { Id = 2, Nome = "X6", Marca = "BMW", Ano = 2022 }
         );
     }
 
-    protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
+    // Função para gerar hash SHA256 de uma senha
+    private static string GerarHashSenha(string senha)
     {
-        if(!optionsBuilder.IsConfigured)
-        {
-            var stringConexao = _configuracaoAppSettings.GetConnectionString("MySql")?.ToString();
-            if(!string.IsNullOrEmpty(stringConexao))
-            {
-                optionsBuilder.UseMySql(
-                    stringConexao,
-                    ServerVersion.AutoDetect(stringConexao)
-                );
-            }
-        }
+        using var sha256 = SHA256.Create();
+        var bytes = Encoding.UTF8.GetBytes(senha);
+        var hash = sha256.ComputeHash(bytes);
+        return Convert.ToHexString(hash); // Retorna hash em hexadecimal
     }
 }
