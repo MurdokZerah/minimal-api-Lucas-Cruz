@@ -3,6 +3,8 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using MinimalApi.Infraestrutura.Db;
+using System.Security.Cryptography;
+using System.Text;
 
 #nullable disable
 
@@ -15,68 +17,103 @@ namespace mininal_api.Migrations
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("ProductVersion", "7.0.14")
+                .HasAnnotation("ProductVersion", "9.0.0")
                 .HasAnnotation("Relational:MaxIdentifierLength", 64);
 
+            // Administradores
             modelBuilder.Entity("MinimalApi.Dominio.Entidades.Administrador", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
+            {
+                b.Property<int>("Id")
+                    .ValueGeneratedOnAdd()
+                    .HasColumnType("int");
 
-                    b.Property<string>("Email")
-                        .IsRequired()
-                        .HasMaxLength(255)
-                        .HasColumnType("varchar(255)");
+                b.Property<string>("Email")
+                    .IsRequired()
+                    .HasMaxLength(255)
+                    .HasColumnType("varchar(255)");
 
-                    b.Property<string>("Perfil")
-                        .IsRequired()
-                        .HasMaxLength(10)
-                        .HasColumnType("varchar(10)");
+                b.Property<string>("Perfil")
+                    .IsRequired()
+                    .HasMaxLength(10)
+                    .HasColumnType("varchar(10)");
 
-                    b.Property<string>("Senha")
-                        .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("varchar(50)");
+                b.Property<string>("Senha")
+                    .IsRequired()
+                    .HasMaxLength(64) // atualizado para SHA256
+                    .HasColumnType("varchar(64)");
 
-                    b.HasKey("Id");
+                b.HasKey("Id");
 
-                    b.ToTable("Administradores");
+                b.ToTable("Administradores");
 
-                    b.HasData(
-                        new
-                        {
-                            Id = 1,
-                            Email = "administrador@teste.com",
-                            Perfil = "Adm",
-                            Senha = "123456"
-                        });
-                });
+                b.HasData(
+                    new
+                    {
+                        Id = 1,
+                        Email = "administrador@teste.com",
+                        Perfil = "Adm",
+                        Senha = GerarHashSenha("123456")
+                    },
+                    new
+                    {
+                        Id = 2,
+                        Email = "joao@teste.com",
+                        Perfil = "Editor",
+                        Senha = GerarHashSenha("editor")
+                    }
+                );
+            });
 
+            // Veiculos
             modelBuilder.Entity("MinimalApi.Dominio.Entidades.Veiculo", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
+            {
+                b.Property<int>("Id")
+                    .ValueGeneratedOnAdd()
+                    .HasColumnType("int");
 
-                    b.Property<int>("Ano")
-                        .HasColumnType("int");
+                b.Property<int>("Ano")
+                    .HasColumnType("int");
 
-                    b.Property<string>("Marca")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("varchar(100)");
+                b.Property<string>("Marca")
+                    .IsRequired()
+                    .HasMaxLength(100)
+                    .HasColumnType("varchar(100)");
 
-                    b.Property<string>("Nome")
-                        .IsRequired()
-                        .HasMaxLength(150)
-                        .HasColumnType("varchar(150)");
+                b.Property<string>("Nome")
+                    .IsRequired()
+                    .HasMaxLength(150)
+                    .HasColumnType("varchar(150)");
 
-                    b.HasKey("Id");
+                b.HasKey("Id");
 
-                    b.ToTable("Veiculos");
-                });
+                b.ToTable("Veiculos");
+
+                b.HasData(
+                    new
+                    {
+                        Id = 1,
+                        Nome = "Fiesta 2.0",
+                        Marca = "Ford",
+                        Ano = 2013
+                    },
+                    new
+                    {
+                        Id = 2,
+                        Nome = "X6",
+                        Marca = "BMW",
+                        Ano = 2022
+                    }
+                );
+            });
 #pragma warning restore 612, 618
+        }
+
+        private static string GerarHashSenha(string senha)
+        {
+            using var sha256 = SHA256.Create();
+            var bytes = Encoding.UTF8.GetBytes(senha);
+            var hash = sha256.ComputeHash(bytes);
+            return Convert.ToHexString(hash);
         }
     }
 }
